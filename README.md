@@ -34,10 +34,27 @@ npm start
 
 ```
 
-服务器将在 `http://localhost:3000` 启动。
+服务器将在配置的端口启动（默认 `http://localhost:3000`）。
 
-> [!Note]
-> 考虑到 3000 端口较为常用，你可以通过编辑`main.js`文件中的`PORT`变量来修改端口号。
+## 配置
+
+程序支持通过 `config.json` 文件进行配置，包含以下选项：
+
+```json
+{
+  "port": 3000,
+  "proxyHeaders": ["x-forwarded-for"],
+  "imagesFolder": "images",
+  "logFile": "access.log"
+}
+```
+
+- **port**: 服务器运行的端口号。
+- **proxyHeaders**: 检测的代理头列表，此项在你的 CDN 不使用`x-forwarded-for`头时很有用。
+- **imagesFolder**: 图片文件夹路径，支持相对路径。
+- **logFile**: 访问日志文件路径，支持相对路径。
+
+`config.json`若不存在将在启动时被自动创建。
 
 ## API 端点
 

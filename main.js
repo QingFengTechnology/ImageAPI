@@ -3,26 +3,77 @@ const fs = require('fs')
 const path = require('path')
 
 const app = express()
-const PORT = process.env.PORT || 3000
 
-// 图片文件夹路径
-const IMAGES_FOLDER = path.join(__dirname, 'images')
+// 默认配置
+const DEFAULT_CONFIG = {
+  port: 3000,
+  proxyHeaders: ['x-forwarded-for'],
+  imagesFolder: 'images',
+  logFile: 'access.log'
+}
+
+// 加载配置文件
+function loadConfig() {
+  const configPath = path.join(__dirname, 'config.json')
+  
+  try {
+    if (fs.existsSync(configPath)) {
+      const configData = fs.readFileSync(configPath, 'utf8')
+      const userConfig = JSON.parse(configData)
+      
+      // 合并用户配置和默认配置
+      return { ...DEFAULT_CONFIG, ...userConfig }
+    } else {
+      // 如果配置文件不存在，创建默认配置
+      fs.writeFileSync(configPath, JSON.stringify(DEFAULT_CONFIG, null, 2))
+      console.info('已创建默认配置文件。')
+      return DEFAULT_CONFIG
+    }
+  } catch (error) {
+    console.error('读取配置文件时发送错误，将使用默认配置。', error)
+    return DEFAULT_CONFIG
+  }
+}
+
+const config = loadConfig()
+const PORT = process.env.PORT || config.port
+
+// 图片文件夹路径（支持相对路径和绝对路径）
+const IMAGES_FOLDER = path.isAbsolute(config.imagesFolder) 
+  ? config.imagesFolder 
+  : path.join(__dirname, config.imagesFolder)
+
 // 日志文件路径
-const LOG_FILE = path.join(__dirname, 'access.log')
+const LOG_FILE = path.isAbsolute(config.logFile)
+  ? config.logFile
+  : path.join(__dirname, config.logFile)
 
 // 确保图片文件夹存在
 if (!fs.existsSync(IMAGES_FOLDER)) {
   fs.mkdirSync(IMAGES_FOLDER, { recursive: true })
-  console.info('已在 ${IMAGES_FOLDER} 创建图片文件夹。请将要随机的图片放入图片文件夹中。')
+  console.info(`已在 ${IMAGES_FOLDER} 创建图片源文件夹。`)
 }
 
 // 获取客户端IP地址
 function getClientIp(req) {
-  let ip = req.headers['x-forwarded-for'] || 
-          req.connection.remoteAddress || 
-          req.socket.remoteAddress ||
-          (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-          'unknown'
+  let ip = 'unknown'
+  
+  // 检查配置的代理头
+  for (const header of config.proxyHeaders) {
+    if (req.headers[header]) {
+      ip = req.headers[header]
+      break
+    }
+  }
+  
+  // 如果代理头中没有找到IP，使用默认方法
+  if (ip === 'unknown') {
+    ip = req.headers['x-forwarded-for'] || 
+         req.connection.remoteAddress || 
+         req.socket.remoteAddress ||
+         (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+         'unknown'
+  }
   
   // 如果包含多个IP（通常是CDN或代理），只取第一个
   if (typeof ip === 'string' && ip.includes(',')) {
@@ -174,9 +225,8 @@ app.get('/health', (req, res) => {
 
 // 启动服务器
 app.listen(PORT, () => {
-  console.info(`服务器已启动在 http://localhost:${PORT}`)
-  console.info(`图片文件夹位于 ${IMAGES_FOLDER}，当前已加载 ${getImageFiles().length} 张图片。`)
-  console.info(`访问日志将保存到: ${LOG_FILE}`)
+  console.info(`服务器已启动在 http://localhost:${PORT} 。`)
+  console.info(`已加载 ${getImageFiles().length} 张图片。`)
 
   if (getImageFiles().length === 0) {
     console.warn('警告: 图片文件夹中没有有效的图片文件。')
