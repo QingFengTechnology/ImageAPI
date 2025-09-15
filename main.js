@@ -19,11 +19,18 @@ if (!fs.existsSync(IMAGES_FOLDER)) {
 
 // 获取客户端IP地址
 function getClientIp(req) {
-  return req.headers['x-forwarded-for'] || 
-         req.connection.remoteAddress || 
-         req.socket.remoteAddress ||
-         (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-         'unknown'
+  let ip = req.headers['x-forwarded-for'] || 
+          req.connection.remoteAddress || 
+          req.socket.remoteAddress ||
+          (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+          'unknown'
+  
+  // 如果包含多个IP（通常是CDN或代理），只取第一个
+  if (typeof ip === 'string' && ip.includes(',')) {
+    ip = ip.split(',')[0].trim()
+  }
+  
+  return ip
 }
 
 // 格式化时间戳
