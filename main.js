@@ -13,8 +13,7 @@ const LOG_FILE = path.join(__dirname, 'access.log')
 // 确保图片文件夹存在
 if (!fs.existsSync(IMAGES_FOLDER)) {
   fs.mkdirSync(IMAGES_FOLDER, { recursive: true })
-  console.info(`已在 ${IMAGES_FOLDER} 创建图片文件夹。`)
-  console.info('请将要随机的图片放入图片文件夹中。')
+  console.info('已在 ${IMAGES_FOLDER} 创建图片文件夹。请将要随机的图片放入图片文件夹中。')
 }
 
 // 获取客户端IP地址
