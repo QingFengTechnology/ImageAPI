@@ -195,9 +195,12 @@ app.get('/', (req, res) => {
       break
   }
 
+  // 清理文件名中的无效HTTP头部字符
+  const cleanImageName = randomImage.replace(/[\r\n\t\x00-\x1F\x7F]/g, '').replace(/[^\x20-\x7E]/g, '_')
+  
   res.setHeader('Content-Type', contentType)
   res.setHeader('Cache-Control', 'no-cache')
-  res.setHeader('X-Random-Image', randomImage)
+  res.setHeader('X-Random-Image', cleanImageName)
 
   // 发送图片文件
   res.sendFile(imagePath)
